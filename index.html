@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VIT REMOTE — Device Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          bg: '#080B12', sidebar: '#0D111B', card: '#111827',
+          primary: '#6366F1', secondary: '#8B5CF6',
+          success: '#22C55E', warning: '#F59E0B', danger: '#EF4444',
+          txt: '#F8FAFC', muted: '#94A3B8'
+        },
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+      }
+    }
+  }
+</script>
+<style>
+  * { box-sizing: border-box; }
+  html, body, #root { height: 100%; margin: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #080B12; color: #F8FAFC; -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #0D111B; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  .glass { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); }
+  .card-grad { background: linear-gradient(145deg, #111827 0%, #0d1424 100%); }
+  .glow { box-shadow: 0 0 24px rgba(99, 102, 241, 0.15); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+  @keyframes pulseDot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/recharts@2.10.3/umd/Recharts.min.js"></script>
+<script src="https://unpkg.com/lucide-react@0.294.0/dist/umd/lucide-react.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useCallback, createContext, useContext, useRef } = React;
+const { BarChart, Bar, LineChart, Line, PieChart, Pie, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } = Recharts;
+const lucide = window.lucideReact || window.LucideReact || {};
+
+// Fallback for lucide icons if UMD globals differ
+const icon = (name) => lucide[name] || ((props) => <span className="inline-block w-4 h-4" {...props}>•</span>);
+const LayoutDashboard = icon('LayoutDashboard');
+const Smartphone = icon('Smartphone');
+const BarChart3 = icon('BarChart3');
+const Package = icon('Package');
+const FileText = icon('FileText');
+const Bell = icon('Bell');
+const Users = icon('Users');
+const Server = icon('Server');
+const Code2 = icon('Code2');
+const SettingsIcon = icon('Settings');
+const HelpCircle = icon('HelpCircle');
+const Info = icon('Info');
+const Search = icon('Search');
+const Sun = icon('Sun');
+const Moon = icon('Moon');
+const Menu = icon('Menu');
+const X = icon('X');
+const ChevronDown = icon('ChevronDown');
+const ChevronRight = icon('ChevronRight');
+const Eye = icon('Eye');
+const EyeOff = icon('EyeOff');
+const LogOut = icon('LogOut');
+const TrendingUp = icon('TrendingUp');
+const TrendingDown = icon('TrendingDown');
+const Activity = icon('Activity');
+const Wifi = icon('Wifi');
+const WifiOff = icon('WifiOff');
+const Clock = icon('Clock');
+const Battery = icon('Battery');
+const Cpu = icon('Cpu');
+const HardDrive = icon('HardDrive');
+const Download = icon('Download');
+const RefreshCw = icon('RefreshCw');
+const Trash2 = icon('Trash2');
+const Plus = icon('Plus');
+const Edit = icon('Edit2');
+const Check = icon('Check');
+const AlertTriangle = icon('AlertTriangle');
+const XCircle = icon('XCircle');
+const Copy = icon('Copy');
+const Printer = icon('Printer');
+const FileDown = icon('FileDown');
+const ArrowLeft = icon('ArrowLeft');
+const Shield = icon('Shield');
+const Lock = icon('Lock');
+const Mail = icon('Mail');
+const UserIcon = icon('User');
+const Grid = icon('Grid3x3');
+const List = icon('List');
+const Filter = icon('Filter');
+const Calendar = icon('Calendar');
+const Zap = icon('Zap');
+const Database = icon('Database');
+const Monitor = icon('Monitor');
+const File = icon('File');
+const Folder = icon('Folder');
+const Image = icon('Image');
+const Video = icon('Video');
+const Music = icon('Music');
+const Terminal = icon('Terminal');
+const CheckCircle = icon('CheckCircle2');
+const ArrowUpRight = icon('ArrowUpRight');
+
+/* ============ UTILS ============ */
+const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
+const fmtDate = (iso) => new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+const fmtDateTime = (iso) => new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+/* ============ MOCK DATA ============ */
+const manufacturers = ['Samsung', 'Google', 'Xiaomi', 'OnePlus', 'Motorola', 'Nokia', 'Sony'];
+const models = ['Galaxy S23', 'Pixel 8', 'Redmi Note 12', 'Nord 3', 'Edge 40', 'G42', 'Xperia 10'];
+const androidVersions = ['14', '13', '12', '11', '10'];
+const networks = ['WiFi', '4G LTE', '5G', 'Ethernet'];
+const deviceNames = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel', 'India', 'Juliet', 'Kilo', 'Lima', 'Mike', 'November', 'Oscar', 'Papa', 'Quebec', 'Romeo', 'Sierra', 'Tango'];
+
+const genDevices = (count = 28) =>
+  Array.from({ length: count }, (_, i) => {
+    const status = pick(['online', 'online', 'online', 'offline', 'pending']);
+    return {
+      id: `DV-${String(i + 1).padStart(4, '0')}`,
+      name: `${pick(deviceNames)}-${rand(100, 999)}`,
+      model: pick(models),
+      androidVersion: pick(androidVersions),
+      manufacturer: pick(manufacturers),
+      battery: rand(15, 100),
+      status,
+      lastSeen: status === 'online' ? 'Now' : `${rand(1, 48)}h ago`,
+      addedDate: daysAgo(rand(1, 180)).split('T')[0],
+      storage: rand(20, 95),
+      ram: rand(30, 90),
+      network: pick(networks),
+    };
+  });
+
+const genLogs = (count = 40) => {
+  const actions = ['Device connected', 'Device disconnected', 'Configuration updated', 'File uploaded', 'App installed', 'User login', 'Password changed', 'Report exported'];
+  const cats = ['Devices', 'Auth', 'System', 'Files', 'Apps', 'Users'];
+  const users = ['admin@vit.io', 'ops@vit.io', 'manager@vit.io', 'viewer@vit.io'];
+  return Array.from({ length: count }, (_, i) => ({
+    id: `LOG-${i + 1}`,
+    timestamp: new Date(Date.now() - rand(0, 72) * 3600000).toISOString(),
+    user: pick(users),
+    action: pick(actions),
+    category: pick(cats),
+    deviceId: `DV-${String(rand(1, 28)).padStart(4, '0')}`,
+    result: pick(['success', 'success', 'success', 'warning', 'error']),
+    ip: `192.168.${rand(0, 255)}.${rand(1, 254)}`,
+  }));
+};
+
+const genNotifications = () => {
+  const data = [
+    { title: 'System update available', message: 'VIT REMOTE v2.4.1 is ready to install.', category: 'updates' },
+    { title: 'Device offline alert', message: 'Device Alpha-421 has been offline for 3 hours.', category: 'devices' },
+    { title: 'New login detected', message: 'A new login was detected from 192.168.1.42.', category: 'security' },
+    { title: 'Backup completed', message: 'Nightly backup finished successfully.', category: 'system' },
+    { title: 'Password expiring soon', message: 'Your password will expire in 5 days.', category: 'security' },
+    { title: 'Device registered', message: 'New device Bravo-882 added to inventory.', category: 'devices' },
+    { title: 'Server maintenance', message: 'Scheduled maintenance on Sunday 02:00 UTC.', category: 'system' },
+    { title: 'Firmware update', message: 'Security firmware patch recommended.', category: 'updates' },
+  ];
+  return data.map((d, i) => ({ id: uid(), ...d, read: i > 4, timestamp: new Date(Date.now() - rand(1, 48) * 3600000).toISOString() }));
+};
+
+const genUsers = () =>
+  [
+    { name: 'Marcus Chen', email: 'marcus@vit.io', role: 'Super Admin' },
+    { name: 'Elena Rodriguez', email: 'elena@vit.io', role: 'Administrator' },
+    { name: 'David Kim', email: 'david@vit.io', role: 'Manager' },
+    { name: 'Sarah O\'Brien', email: 'sarah@vit.io', role: 'Viewer' },
+    { name: 'James Wilson', email: 'james@vit.io', role: 'Administrator' },
+    { name: 'Priya Patel', email: 'priya@vit.io', role: 'Manager' },
+    { name: 'Thomas Anderson', email: 'thomas@vit.io', role: 'Viewer' },
+    { name: 'Yuki Tanaka', email: 'yuki@vit.io', role: 'Manager' },
+  ].map((u, i) => ({
+    id: `USR-${i + 1}`,
+    ...u,
+    status: i % 5 === 4 ? 'inactive' : 'active',
+    lastLogin: new Date(Date.now() - rand(1, 240) * 3600000).toISOString(),
+    avatar: u.name.split(' ').map(n => n[0]).join(''),
+  }));
+
+const genApps = () =>
+  [
+    { name: 'Chrome', packageName: 'com.android.chrome', category: 'Browser' },
+    { name: 'Gmail', packageName: 'com.google.android.gm', category: 'Communication' },
+    { name: 'YouTube', packageName: 'com.google.android.youtube', category: 'Media' },
+    { name: 'WhatsApp', packageName: 'com.whatsapp', category: 'Communication' },
+    { name: 'Instagram', packageName: 'com.instagram.android', category: 'Social' },
+    { name: 'Spotify', packageName: 'com.spotify.music', category: 'Media' },
+    { name: 'Maps', packageName: 'com.google.android.apps.maps', category: 'Navigation' },
+    { name: 'Photos', packageName: 'com.google.android.apps.photos', category: 'Media' },
+    { name: 'Drive', packageName: 'com.google.android.apps.docs', category: 'Productivity' },
+    { name: 'Slack', packageName: 'com.Slack', category: 'Productivity' },
+    { name: 'Netflix', packageName: 'com.netflix.mediaclient', category: 'Media' },
+    { name: 'Telegram', packageName: 'org.telegram.messenger', category: 'Communication' },
+  ].map((a, i) => ({
+    id: `APP-${i + 1}`,
+    ...a,
+    version: `${rand(1, 20)}.${rand(0, 9)}.${rand(0, 9)}`,
+    installDate: daysAgo(rand(10, 400)).split('T')[0],
+    status: i % 7 === 5 ? 'Update Available' : 'Up to date',
+    color: `hsl(${rand(0, 360)}, 70%, 55%)`,
+  }));
+
+const genFiles = () =>
+  [
+    { name: 'report_q4.pdf', type: 'PDF', category: 'Documents', size: '2.4 MB' },
+    { name: 'screenshot.png', type: 'PNG', category: 'Images', size: '845 KB' },
+    { name: 'app_backup.apk', type: 'APK', category: 'Apps', size: '24.8 MB' },
+    { name: 'config.json', type: 'JSON', category: 'Config', size: '12 KB' },
+    { name: 'video_tutorial.mp4', type: 'MP4', category: 'Videos', size: '128 MB' },
+    { name: 'notes.txt', type: 'TXT', category: 'Documents', size: '4 KB' },
+    { name: 'dashboard_export.csv', type: 'CSV', category: 'Data', size: '892 KB' },
+    { name: 'avatar.jpg', type: 'JPG', category: 'Images', size: '1.2 MB' },
+    { name: 'system.log', type: 'LOG', category: 'Logs', size: '3.5 MB' },
+    { name: 'presentation.pptx', type: 'PPTX', category: 'Documents', size: '8.7 MB' },
+    { name: 'song.mp3', type: 'MP3', category: 'Audio', size: '5.1 MB' },
+    { name: 'database_dump.sql', type: 'SQL', category: 'Data', size: '45 MB' },
+  ].map((f, i) => ({ id: `FILE-${i + 1}`, ...f, modified: daysAgo(rand(1, 60)) }));
+
+const activityData = Array.from({ length: 14 }, (_, i) => ({
+  day: `Day ${i + 1}`,
+  active: rand(120, 200),
+  inactive: rand(20, 60),
+}));
+
+const registrationData = Array.from({ length: 8 }, (_, i) => ({
+  month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'][i],
+  devices: rand(10, 50),
+}));
+
+const androidDist = [
+  { name: 'Android 14', value: 82, color: '#6366F1' },
+  { name: 'Android 13', value: 68, color: '#8B5CF6' },
+  { name: 'Android 12', value: 45, color: '#22C55E' },
+  { name: 'Android 11', value: 32, color: '#F59E0B' },
+  { name: 'Android 10', value: 21, color: '#EF4444' },
+];
+
+const perfData = Array.from({ length: 24 }, (_, i) => ({
+  hour: `${i}:00`,
+  cpu: rand(20, 65),
+  memory: rand(40, 75),
+  network: rand(10, 90),
+}));
+
+/* ============ CONTEXT ============ */
+const AppContext = createContext(null);
+const useApp = () => useContext(AppContext);
+
+function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+  const push = useCallback((msg, type = 'success') => {
+    const id = uid();
+    setToasts(t => [...t, { id, msg, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3200);
+  }, []);
+  return (
+    <AppContext.Provider value={{ push }}>
+      {children}
+      <div className="fixed bottom-4 right-4 z-[100] space-y-2 max-w-xs">
+        {toasts.map(t => (
+          <div key={t.id} className={`fade-in px-4 py-3 rounded-xl border shadow-lg glass text-sm flex items-center gap-2 ${
+            t.type === 'error' ? 'border-danger/40 text-danger' :
+            t.type === 'warning' ? 'border-warning/40 text-warning' :
+            'border-success/40 text-success'
+          }`}>
+            {t.type === 'error' ? <XCircle size={16} /> : t.type === 'warning' ? <AlertTriangle size={16} /> : <CheckCircle size={16} />}
+            {t.msg}
+          </div>
+        ))}
+      </div>
+    </AppContext.Provider>
+  );
+}
+
+/* ============ UI COMPONENTS ============ */
+const Card = ({ children, className = '' }) => (
+  <div className={`bg-card border border-white/5 rounded-2xl ${className}`}>{children}</div>
+);
+
+const StatCard = ({ icon: Icon, label, value, change, desc, trend = 'up' }) => (
+  <Card className="p-5 hover:border-primary/30 transition-colors">
+    <div className="flex items-start justify-between">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${trend === 'up' ? 'bg-primary/15 text-primary' : 'bg-danger/15 text-danger'}`}>
+        <Icon size={18} />
+      </div>
+      <div className={`flex items-center gap-1 text-xs font-medium ${trend === 'up' ? 'text-success' : 'text-danger'}`}>
+        {trend === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+        {change}
+      </div>
+    </div>
+    <div className="mt-4">
+      <div className="text-2xl font-bold text-txt">{value}</div>
+      <div className="text-sm text-muted mt-1">{label}</div>
+      <div className="text-xs text-muted/70 mt-0.5">{desc}</div>
+    </div>
+  </Card>
+);
+
+const Badge = ({ children, type = 'default' }) => {
+  const map = {
+    success: 'bg-success/15 text-success border-success/30',
+    warning: 'bg-warning/15 text-warning border-warning/30',
+    danger: 'bg-danger/15 text-danger border-danger/30',
+    primary: 'bg-primary/15 text-primary border-primary/30',
+    muted: 'bg-muted/15 text-muted border-muted/30',
+    default: 'bg-white/5 text-muted border-white/10',
+  };
+  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border rounded-md ${map[type]}`}>{children}</span>;
+};
+
+const Button = ({ children, variant = 'primary', size = 'md', className = '', icon: Icon, ...props }) => {
+  const variants = {
+    primary: 'bg-primary hover:bg-primary/90 text-white',
+    secondary: 'bg-white/5 hover:bg-white/10 text-txt border border-white/10',
+    ghost: 'hover:bg-white/5 text-muted hover:text-txt',
+    danger: 'bg-danger/15 hover:bg-danger/25 text-danger border border-danger/30',
+    success: 'bg-success/15 hover:bg-success/25 text-success border border-success/30',
+  };
+  const sizes = { sm: 'px-3 py-1.5 text-xs', md: 'px-4 py-2 text-sm', lg: 'px-5 py-2.5 text-sm' };
+  return (
+    <button className={`inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`} {...props}>
+      {Icon && <Icon size={size === 'sm' ? 12 : 16} />}
+      {children}
+    </button>
+  );
+};
+
+const Modal = ({ open, onClose, title, children, wide }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className={`relative bg-card border border-white/10 rounded-2xl w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} max-h-[85vh] overflow-y-auto shadow-2xl fade-in`} onClick={e => e.stopPropagation()}>
+        <div className="sticky top-0 bg-card/95 backdrop-blur px-5 py-4 border-b border-white/5 flex items-center justify-between">
+          <h3 className="font-semibold text-txt">{title}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-white/5 rounded-lg text-muted hover:text-txt"><X size={18} /></button>
+        </div>
+        <div className="p-5">{children}</div>
+      </div>
+    </div>
+  );
+};
+
+const Field = ({ label, children }) => (
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-txt mb-1.5">{label}</label>
+    {children}
+  </div>
+);
+
+const Input = ({ className = '', ...props }) => (
+  <input className={`w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-txt placeholder-muted focus:outline-none focus:border-primary/50 transition-colors ${className}`} {...props} />
+);
+
+const Select = ({ className = '', children, ...props }) => (
+  <select className={`w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-txt focus:outline-none focus:border-primary/50 ${className}`} {...props}>{children}</select>
+);
+
+const Progress = ({ value, color = 'primary', size = 'md' }) => {
+  const colors = { primary: 'bg-primary', success: 'bg-success', warning: 'bg-warning', danger: 'bg-danger' };
+  const h = size === 'sm' ? 'h-1' : 'h-1.5';
+  return (
+    <div className={`w-full bg-white/5 rounded-full ${h} overflow-hidden`}>
+      <div className={`${colors[color]} ${h} rounded-full transition-all`} style={{ width: `${value}%` }} />
+    </div>
+  );
+};
+
+const Pagination = ({ page, total, onChange }) => {
+  const pages = Math.ceil(total / 10);
+  if (pages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+      <span className="text-xs text-muted">Showing {((page - 1) * 10) + 1}-{Math.min(page * 10, total)} of {total}</span>
+      <div className="flex items-center gap-1">
+        <button onClick={() => onChange(Math.max(1, page - 1))} disabled={page === 1} className="px-2 py-1 text-xs rounded border border-white/10 disabled:opacity-40 hover:bg-white/5">Prev</button>
+        {Array.from({ length: Math.min(pages, 6) }, (_, i) => i + 1).map(p => (
+          <button key={p} onClick={() => onChange(p)} className={`w-7 h-7 text-xs rounded ${p === page ? 'bg-primary text-white' : 'hover:bg-white/5 text-muted'}`}>{p}</button>
+        ))}
+        <button onClick={() => onChange(Math.min(pages, page + 1))} disabled={page === pages} className="px-2 py-1 text-xs rounded border border-white/10 disabled:opacity-40 hover:bg-white/5">Next</button>
+      </div>
+    </div>
+  );
+};
+
+const EmptyState = ({ title, desc, icon: Icon = File }) => (
+  <div className="py-16 text-center">
+    <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-white/5 flex items-center justify-center text-muted"><Icon size={24} /></div>
+    <div className="font-medium text-txt">{title}</div>
+    <div className="text-sm text-muted mt-1">{desc}</div>
+  </div>
+);
+
+const Skeleton = () => (
+  <div className="animate-pulse space-y-3">
+    {[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-white/5 rounded-lg" />)}
+  </div>
+);
+
+/* ============ LOGIN ============ */
+function Login({ onLogin }) {
+  const [email, setEmail] = useState('admin@vit.io');
+  const [password, setPassword] = useState('demo1234');
+  const [show, setShow] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const submit = (e) => {
+    e?.preventDefault();
+    setError(''); setSuccess('');
+    if (!email.includes('@')) { setError('Please enter a valid email'); return; }
+    if (password.length < 4) { setError('Password must be at least 4 characters'); return; }
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      if (password === 'wrong') { setError('Invalid credentials'); return; }
+      setSuccess('Login successful! Redirecting...');
+      setTimeout(() => onLogin({ email, remember }), 700);
+    }, 900);
+  };
+
+  const demo = () => {
+    setEmail('admin@vit.io'); setPassword('demo1234');
+    setTimeout(() => submit(), 100);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-3xl" />
+      </div>
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary mb-4 glow">
+            <Shield size={28} className="text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-txt">VIT REMOTE</h1>
+          <p className="text-sm text-muted mt-1">Device Management Platform</p>
+        </div>
+        <Card className="p-6">
+          <form onSubmit={submit}>
+            <Field label="Email">
+              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" />
+            </Field>
+            <Field label="Password">
+              <div className="relative">
+                <Input type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+                <button type="button" onClick={() => setShow(!show)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted hover:text-txt">
+                  {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </Field>
+            <div className="flex items-center justify-between mb-4">
+              <label className="flex items-center gap-2 text-sm text-muted cursor-pointer">
+                <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} className="w-4 h-4 rounded accent-primary" />
+                Remember me
+              </label>
+              <button type="button" onClick={() => setError('Password reset link sent to your email (demo)')} className="text-sm text-primary hover:underline">Forgot password?</button>
+            </div>
+            {error && <div className="mb-3 px-3 py-2 rounded-lg bg-danger/10 border border-danger/30 text-danger text-sm flex items-center gap-2"><AlertTriangle size={14} />{error}</div>}
+            {success && <div className="mb-3 px-3 py-2 rounded-lg bg-success/10 border border-success/30 text-success text-sm flex items-center gap-2"><CheckCircle size={14} />{success}</div>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? <><RefreshCw size={16} className="spin" /> Signing in...</> : 'Sign In'}
+            </Button>
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10" /></div>
+              <div className="relative flex justify-center"><span className="px-3 bg-card text-xs text-muted">OR</span></div>
+            </div>
+            <Button type="button" variant="secondary" className="w-full" onClick={demo} icon={Zap}>Use Demo Login</Button>
+          </form>
+        </Card>
+        <p className="text-center text-xs text-muted mt-6">Demo credentials: admin@vit.io / demo1234</p>
+        <p className="text-center text-xs text-muted/60 mt-1">All data is simulated for demonstration purposes.</p>
+      </div>
+    </div>
+  );
+}
+
+/* ============ LAYOUT ============ */
+const NAV = [
+  { key: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { key: 'devices', label: 'Devices', icon: Smartphone },
+  { key: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { key: 'inventory', label: 'Inventory', icon: Package },
+  { key: 'logs', label: 'Activity Logs', icon: FileText },
+  { key: 'notifications', label: 'Notifications', icon: Bell },
+  { key: 'reports', label: 'Reports', icon: BarChart3 },
+  { key: 'users', label: 'Users', icon: Users },
+  { key: 'server', label: 'Server Status', icon: Server },
+  { key: 'api', label: 'API Docs', icon: Code2 },
+  { key: 'settings', label: 'Settings', icon: SettingsIcon },
+  { key: 'help', label: 'Help & Support', icon: HelpCircle },
+];
+
+function Layout({ user, page, setPage, onLogout, notifications, setNotifications }) {
+  const { push } = useApp();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('vit_theme') || 'dark');
+  const [search, setSearch] = useState('');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('vit_theme', theme);
+  }, [theme]);
+
+  const unread = notifications.filter(n => !n.read).length;
+
+  const doSearch = (e) => {
+    e.preventDefault();
+    if (!search.trim()) return;
+    push(`Searching for "${search}" (demo results)`, 'warning');
+    const found = NAV.find(n => n.label.toLowerCase().includes(search.toLowerCase()));
+    if (found) { setPage(found.key); }
+    setSearch('');
+  };
+
+  return (
+    <div className="min-h-screen bg-bg flex">
+      {/* Sidebar desktop */}
+      <aside className={`hidden lg:flex flex-col bg-sidebar border-r border-white/5 ${collapsed ? 'w-16' : 'w-64'} transition-all duration-200 fixed h-screen z-30`}>
+        <div className="h-16 flex items-center gap-2 px-4 border-b border-white/5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shrink-0">
+            <Shield size={16} className="text-white" />
+          </div>
+          {!collapsed && <span className="font-bold text-txt">VIT REMOTE</span>}
+        </div>
+        <nav className="flex-1 overflow-y-auto py-3 px-2 no-scrollbar">
+          {NAV.map(n => {
+            const active = page === n.key;
+            return (
+              <button key={n.key} onClick={() => setPage(n.key)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-sm font-medium transition-colors ${active ? 'bg-primary/15 text-primary' : 'text-muted hover:bg-white/5 hover:text-txt'}`}>
+                <n.icon size={18} className="shrink-0" />
+                {!collapsed && <span className="truncate">{n.label}</span>}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="p-2 border-t border-white/5">
+          <button onClick={() => setCollapsed(!collapsed)} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-muted hover:text-txt rounded-lg hover:bg-white/5">
+            <ChevronRight size={18} className={collapsed ? '' : 'rotate-180'} />
+            {!collapsed && 'Collapse'}
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile drawer */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 z-40">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
+          <aside className="relative w-64 h-full bg-sidebar border-r border-white/5 flex flex-col">
+            <div className="h-16 flex items-center justify-between px-4 border-b border-white/5">
+              <span className="font-bold">VIT REMOTE</span>
+              <button onClick={() => setSidebarOpen(false)} className="p-1 text-muted"><X size={20} /></button>
+            </div>
+            <nav className="flex-1 overflow-y-auto py-3 px-2">
+              {NAV.map(n => (
+                <button key={n.key} onClick={() => { setPage(n.key); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-sm font-medium ${page === n.key ? 'bg-primary/15 text-primary' : 'text-muted hover:bg-white/5'}`}>
+                  <n.icon size={18} /> {n.label}
+                </button>
+              ))}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {/* Main */}
+      <div className={`flex-1 flex flex-col min-w-0 ${collapsed ? 'lg:ml-16' : 'lg:ml-64'} transition-all duration-200`}>
+        {/* Header */}
+        <header className="h-16 bg-sidebar/80 backdrop-blur border-b border-white/5 flex items-center gap-3 px-4 sticky top-0 z-20">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 text-muted hover:text-txt"><Menu size={20} /></button>
+          <form onSubmit={doSearch} className="relative flex-1 max-w-md">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search pages, devices, users..." className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-txt placeholder-muted focus:outline-none focus:border-primary/50" />
+          </form>
+          <div className="hidden md:block text-sm text-muted">{now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 text-muted hover:text-txt rounded-lg hover:bg-white/5">
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <button onClick={() => setPage('notifications')} className="p-2 text-muted hover:text-txt rounded-lg hover:bg-white/5 relative">
+            <Bell size={18} />
+            {unread > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-danger text-white text-[10px] rounded-full flex items-center justify-center">{unread}</span>}
+          </button>
+          <div className="relative">
+            <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-2 p-1.5 hover:bg-white/5 rounded-lg">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xs font-bold">AD</div>
+              <ChevronDown size={14} className="text-muted" />
+            </button>
+            {profileOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-white/10 rounded-xl shadow-2xl overflow-hidden fade-in" onMouseLeave={() => setProfileOpen(false)}>
+                <div className="p-3 border-b border-white/5">
+                  <div className="font-medium text-sm text-txt">Admin User</div>
+                  <div className="text-xs text-muted truncate">{user.email}</div>
+                </div>
+                <button onClick={() => { setPage('settings'); setProfileOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-white/5 flex items-center gap-2"><SettingsIcon size={14} /> Settings</button>
+                <button onClick={() => { setPage('help'); setProfileOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-white/5 flex items-center gap-2"><HelpCircle size={14} /> Help</button>
+                <button onClick={onLogout} className="w-full text-left px-3 py-2 text-sm text-danger hover:bg-danger/10 flex items-center gap-2 border-t border-white/5"><LogOut size={14} /> Sign out</button>
+              </div>
+            )}
+          </div>
+        </header>
+
+        <main className="flex-1 p-4 md:p-6 min-w-0 overflow-x-hidden">
+          <PageRouter page={page} setPage={setPage} notifications={notifications} setNotifications={setNotifications} />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+/* ============ PAGES ============ */
+function Overview({ setPage }) {
+  return (
+    <div className="space-y-5 fade-in">
+      <div>
+        <h1 className="text-xl md:text-2xl font-bold text-txt">Overview Dashboard</h1>
+        <p className="text-sm text-muted mt-1">Real-time overview of your device fleet (demo data)</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <StatCard icon={Smartphone} label="Total Devices" value="248" change="+12.5%" desc="All registered devices" />
+        <StatCard icon={Wifi} label="Online Devices" value="186" change="+8.2%" desc="Currently connected" />
+        <StatCard icon={WifiOff} label="Offline Devices" value="42" change="-3.1%" desc="Not connected" trend="down" />
+        <StatCard icon={Clock} label="Pending Devices" value="20" change="+2.4%" desc="Awaiting approval" />
+        <StatCard icon={Users} label="Total Users" value="18" change="+1" desc="Active accounts" />
+        <StatCard icon={Activity} label="System Health" value="98.5%" change="+0.3%" desc="All systems nominal" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-5">
+          <h3 className="font-semibold text-txt mb-4">Device Activity (14 days)</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <AreaChart data={activityData}>
+              <defs>
+                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} />
+              <YAxis stroke="#94A3B8" fontSize={11} />
+              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }} />
+              <Area type="monotone" dataKey="active" stroke="#6366F1" fill="url(#g1)" />
+              <Area type="monotone" dataKey="inactive" stroke="#8B5CF6" fill="url(#g2)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card className="p-5">
+          <h3 className="font-semibold text-txt mb-4">Android Version Distribution</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie data={androidDist} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2}>
+                {androidDist.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+              </Pie>
+              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-5">
+          <h3 className="font-semibold text-txt mb-4">Device Registration Trends</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={registrationData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} />
+              <YAxis stroke="#94A3B8" fontSize={11} />
+              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }} />
+              <Bar dataKey="devices" fill="#6366F1" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card className="p-5">
+          <h3 className="font-semibold text-txt mb-4">System Performance (24h)</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={perfData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="hour" stroke="#94A3B8" fontSize={10} />
+              <YAxis stroke="#94A3B8" fontSize={11} />
+              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }} />
+              <Line type="monotone" dataKey="cpu" stroke="#22C55E" dot={false} strokeWidth={2} />
+              <Line type="monotone" dataKey="memory" stroke="#F59E0B" dot={false} strokeWidth={2} />
+              <Line type="monotone" dataKey="network" stroke="#6366F1" dot={false} strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => setPage('devices')} icon={Smartphone}>Manage Devices</Button>
+        <Button variant="secondary" onClick={() => setPage('analytics')} icon={BarChart3}>View Analytics</Button>
+        <Button variant="secondary" onClick={() => setPage('reports')} icon={FileText}>Generate Report</Button>
+      </div>
+    </div>
+  );
+}
+
+function Devices({ setPage, devices, setDevices, setSelectedDevice }) {
+  const { push } = useApp();
+  const [view, setView] = useState('table');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [mfrFilter, setMfrFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortDir, setSortDir] = useState('asc');
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [modalDevice, setModalDevice] = useState(null);
+
+  const filtered = useMemo(() => {
+    let out = devices.filter(d => {
+      const s = search.toLowerCase();
+      const okSearch = !s || d.name.toLowerCase().includes(s) || d.id.toLowerCase().includes(s) || d.model.toLowerCase().includes(s);
+      const okStatus = statusFilter === 'all' || d.status === statusFilter;
+      const okMfr = mfrFilter === 'all' || d.manufacturer === mfrFilter;
+      return okSearch && okStatus && okMfr;
+    });
+    out.sort((a, b) => {
+      const av = a[sortBy], bv = b[sortBy];
+      if (typeof av === 'number') return sortDir === 'asc' ? av - bv : bv - av;
+      return sortDir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+    return out;
+  }, [devices, search, statusFilter, mfrFilter, sortBy, sortDir]);
+
+  useEffect(() => { setPage(1); }, [search, statusFilter, mfrFilter]);
+
+  const pageData = filtered.slice((page - 1) * 10, page * 10);
+
+  const refresh = () => {
+    setLoading(true);
+    setTimeout(() => { setDevices(genDevices(28)); setLoading(false); push('Devices refreshed with new demo data'); }, 700);
+  };
+
+  const exportCSV = () => {
+    const csv = 'Name,ID,Model,Android,Manufacturer,Battery,Status,Last Seen,Added\n' +
+      filtered.map(d => `${d.name},${d.id},${d.model},${d.androidVersion},${d.manufacturer},${d.battery}%,${d.status},${d.lastSeen},${d.addedDate}`).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'devices.csv'; a.click();
+    URL.revokeObjectURL(url);
+    push('Devices exported to CSV');
+  };
+
+  const openDetails = (d) => {
+    setSelectedDevice(d);
+    setPage('device-detail');
+  };
+
+  const SortHead = ({ k, children }) => (
+    <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted uppercase tracking-wider cursor-pointer hover:text-txt whitespace-nowrap" onClick={() => {
+      if (sortBy === k) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+      else { setSortBy(k); setSortDir('asc'); }
+    }}>
+      <span className="inline-flex items-center gap-1">{children} {sortBy === k && (sortDir === 'asc' ? '↑' : '↓')}</span>
+    </th>
+  );
+
+  const StatusBadge = ({ s }) => (
+    <Badge type={s === 'online' ? 'success' : s === 'offline' ? 'danger' : 'warning'}>
+      <span className={`w-1.5 h-1.5 rounded-full ${s === 'online' ? 'bg-success' : s === 'offline' ? 'bg-danger' : 'bg-warning'} ${s === 'online' ? 'pulse-dot' : ''}`} />
+      {s}
+    </Badge>
+  );
+
+  return (
+    <div className="space-y-4 fade-in">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold text-txt">Devices</h1>
+          <p className="text-sm text-muted mt-1">{devices.length} devices in inventory (demo data)</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={refresh} icon={RefreshCw}>Refresh</Button>
+          <Button variant="secondary" size="sm" onClick={exportCSV} icon={Download}>Export CSV</Button>
+          <div className="flex rounded-lg border border-white/10 overflow-hidden">
+            <button onClick={() => setView('table')} className={`px-2.5 py-1.5 ${view === 'table' ? 'bg-primary text-white' : 'text-muted hover:bg-white/5'}`}><List size={14} /></button>
+            <button onClick={() => setView('grid')} className={`px-2.5 py-1.5 ${view === 'grid' ? 'bg-primary text-white' : 'text-muted hover:bg-white/5'}`}><Grid size={14} /></button>
+          </div>
+        </div>
+      </div>
+
+      <Card className="p-3">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search devices..." className="pl-9" />
+          </div>
+          <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="w-36">
+            <option value="all">All Status</option>
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
+            <option value="pending">Pending</option>
+          </Select>
+          <Select value={mfrFilter} onChange={e => setMfrFilter(e.target.value)} className="w-40">
+            <option value="all">All Manufacturers</option>
+            {manufacturers.map(m => <option key={m} value={m}>{m}</option>)}
+          </Select>
+        </div>
+      </Card>
+
+      {loading ? <Card className="p-5"><Skeleton /></Card> : view === 'table' ? (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-white/5 border-b border-white/5">
+                <tr>
+                  <SortHead k="name">Device</SortHead>
+                  <SortHead k="id">ID</SortHead>
+                  <SortHead k="model">Model</SortHead>
+                  <SortHead k="androidVersion">Android</SortHead>
+                  <SortHead k="manufacturer">Manufacturer</SortHead>
+                  <SortHead k="battery">Battery</SortHead>
+                  <SortHead k="status">Status</SortHead>
+                  <SortHead k="lastSeen">Last Seen</SortHead>
+                  <th className="px-3 py-2.5"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {pageData.map(d => (
+                  <tr key={d.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-3 py-2.5 font-medium text-txt whitespace-nowrap">{d.name}</td>
+                    <td className="px-3 py-2.5 text-muted text-xs font-mono">{d.id}</td>
+                    <td className="px-3 py-2.5 text-muted whitespace-nowrap">{d.model}</td>
+                    <td className="px-3 py-2.5 text-muted">v{d.androidVersion}</td>
+                    <td className="px-3 py-2.5 text-muted">{d.manufacturer}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <Battery size={12} className="text-muted" />
+                        <span className={`text-xs font-medium ${d.battery > 50 ? 'text-success' : d.battery > 20 ? 'text-warning' : 'text-danger'}`}>{d.battery}%</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5"><StatusBadge s={d.status} /></td>
+                    <td className="px-3 py-2.5 text-muted text-xs whitespace-nowrap">{d.lastSeen}</td>
+                    <td className="px-3 py-2.5">
+                      <button onClick={() => openDetails(d)} className="text-xs text-primary hover:underline">View</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!pageData.length && <EmptyState title="No devices found" desc="Try adjusting your filters" icon={Smartphone} />}
+          <div className="px-4 py-3 border-t border-white/5">
+            <Pagination page={page} total={filtered.length} onChange={setPage} />
+          </div>
+        </Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {pageData.map(d => (
+              <Card key={d.id} className="p-4 hover:border-primary/30 transition-colors cursor-pointer" onClick={() => openDetails(d)}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center"><Smartphone size={16} /></div>
+                  <StatusBadge s={d.status} />
+                </div>
+                <div className="font-semibold text-txt truncate">{d.name}</div>
+                <div className="text-xs text-muted font-mono">{d.id}</div>
+                <div className="mt-3 space-y-1.5 text-xs">
+                  <div className="flex justify-between"><span className="text-muted">Model</span><span className="text-txt">{d.model}</span></div>
+                  <div className="flex justify-between"><span className="text-muted">Android</span><span className="text-txt">v{d.androidVersion}</span></div>
+                  <div className="flex justify-between"><span className="text-muted">Battery</span><span className={d.battery > 50 ? 'text-success' : 'text-warning'}>{d.battery}%</span></div>
+                </div>
+              </Card>
+            ))}
+          </div>
+          {!pageData.length && <EmptyState title="No devices found" desc="Try adjusting your filters" icon={Smartphone} />}
+          <Pagination page={page} total={filtered.length} onChange={setPage} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function DeviceDetail({ device, setPage }) {
+  const [tab, setTab] = useState('overview');
+  if (!device) return <EmptyState title="No device selected" desc="Choose a device from the list" />;
+
+  const tabs = [
+    { k: 'overview', label: 'Overview' },
+    { k: 'specs', label: 'Specifications' },
+    { k: 'apps', label: 'App Inventory' },
+    { k: 'files', label: 'File Inventory' },
+    { k: 'activity', label: 'Activity History' },
+    { k: 'notes', label: 'Notes' },
+  ];
+  const apps = genApps().slice(0, 6);
+  const files = genFiles().slice(0, 6);
+  const acts = genLogs(8);
+
+  return (
+    <div className="space-y-4 fade-in">
+      <button onClick={() => setPage('devices')} className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-txt"><ArrowLeft size={16} /> Back to devices</button>
+
+      <Card className="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-primary"><Smartphone size={24} /></div>
+            <div>
+              <h1 className="text-xl font-bold text-txt">{device.name}</h1>
+              <div className="text-sm text-muted font-mono">{device.id} · {device.manufacturer} {device.model}</div>
+              <div className="mt-2"><Badge type={device.status === 'online' ? 'success' : device.status === 'offline' ? 'danger' : 'warning'}>{device.status.toUpperCase()}</Badge> <Badge type="muted">DEMO DATA</Badge></div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" icon={RefreshCw}>Sync</Button>
+            <Button variant="secondary" size="sm" icon={Edit}>Edit</Button>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <div className="flex gap-1 overflow-x-auto no-scrollbar border-b border-white/5 pb-3">
+          {tabs.map(t => (
+            <button key={t.k} onClick={() => setTab(t.k)} className={`px-3 py-1.5 text-sm rounded-lg whitespace-nowrap ${tab === t.k ? 'bg-primary/15 text-primary font-medium' : 'text-muted hover:bg-white/5'}`}>{t.label}</button>
+          ))}
+        </div>
+
+        <div className="pt-4">
+          {tab === 'overview' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <h4 className="font-semibold text-txt mb-3 text-sm">Simulated Status</h4>
+                <div className="space-y-4">
+                  {[{ l: 'Battery', v: device.battery, c: device.battery > 50 ? 'success' : 'warning' },
+                    { l: 'Storage', v: device.storage, c: 'primary' },
+                    { l: 'RAM Usage', v: device.ram, c: 'warning' }].map(x => (
+                    <div key={x.l}>
+                      <div className="flex justify-between text-xs mb-1"><span className="text-muted">{x.l}</span><span className="text-txt">{x.v}%</span></div>
+                      <Progress value={x.v} color={x.c} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold text-txt mb-3 text-sm">Connectivity</h4>
+                <div className="space-y-2 text-sm">
+                  {[['Network', device.network], ['Last Updated', 'Just now'], ['IP Address', '192.168.1.42'], ['Uptime', '14 days']].map(([k, v]) => (
+                    <div key={k} className="flex justify-between py-1.5 border-b border-white/5"><span className="text-muted">{k}</span><span className="text-txt">{v}</span></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {tab === 'specs' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              {[['Device Name', device.name], ['Device ID', device.id], ['Manufacturer', device.manufacturer], ['Model', device.model],
+                ['Android Version', `Android ${device.androidVersion}`], ['Device Status', device.status],
+                ['Registration Date', device.addedDate], ['Network', device.network], ['Storage', `${device.storage}% used`],
+                ['RAM', `${device.ram}% used`], ['Battery', `${device.battery}%`]].map(([k, v]) => (
+                <div key={k} className="flex justify-between py-2 border-b border-white/5"><span className="text-muted">{k}</span><span className="text-txt">{v}</span></div>
+              ))}
+            </div>
+          )}
+          {tab === 'apps' && (
+            <div className="space-y-2">
+              {apps.map(a => (
+                <div key={a.id} className="flex items-center gap-3 py-2 border-b border-white/5">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ background: a.color }}>{a.name[0]}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-txt text-sm truncate">{a.name}</div>
+                    <div className="text-xs text-muted font-mono truncate">{a.packageName}</div>
+                  </div>
+                  <span className="text-xs text-muted hidden sm:block">v{a.version}</span>
+                  <Badge type="success">{a.status}</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+          {tab === 'files' && (
+            <div className="space-y-2">
+              {files.map(f => (
+                <div key={f.id} className="flex items-center gap-3 py-2 border-b border-white/5">
+                  <div className="w-9 h-9 rounded-lg bg-white/5 text-muted flex items-center justify-center"><File size={16} /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-txt text-sm truncate">{f.name}</div>
+                    <div className="text-xs text-muted">{f.category}</div>
+                  </div>
+                  <span className="text-xs text-muted">{f.size}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {tab === 'activity' && (
+            <div className="space-y-2">
+              {acts.map(a => (
+                <div key={a.id} className="flex items-start gap-3 py-2 border-b border-white/5">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${a.result === 'success' ? 'bg-success/15 text-success' : a.result === 'warning' ? 'bg-warning/15 text-warning' : 'bg-danger/15 text-danger'}`}>
+                    {a.result === 'success' ? <Check size={12} /> : a.result === 'warning' ? <AlertTriangle size={12} /> : <XCircle size={12} />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm text-txt">{a.action}</div>
+                    <div className="text-xs text-muted">{a.user} · {fmtDateTime(a.timestamp)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {tab === 'notes' && (
+            <div>
+              <textarea className="w-full h-40 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-txt placeholder-muted focus:outline-none focus:border-primary/50" placeholder="Add your notes about this device (demo)..."></textarea>
+              <div className="flex justify-end mt-3"><Button size="sm" icon={Check}>Save Note</Button></div>
+            </div>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function Analytics() {
+  const [range, setRange] = useState('14d');
+  return (
+    <div className="space-y-4 fade-in">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold text-txt">Device Analytics</h1>
+          <p className="text-sm text-muted mt-1">Interactive charts with demo datasets</p>
+        </div>
+        <Select value={range} onChange={e => setRange(e.target.value)} className="w-36">
+          <option value="7d">Last 7 days</option>
+          <option value="14d">Last 14 days</option>
+          <option value="30d">Last 30 days</option>
+        </Select>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-5">
+          <h3 className="font-semibold text-txt mb-4 text-sm">Device Activity Overview</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <AreaChart data={activityData}>
+              <defs>
+                <linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366F1" stopOpacity={0.5} /><stop offset="95%" stopColor="#6366F1" stopOpacity={0} /></linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} />
+              <YAxis stroke="#94A3B8" fontSize={11} />
+              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }} />
+              <Area type="monotone" dataKey="active" stroke="#6366F1" fill="url(#ga)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card className="p-5">
+          <h3 className="font-semibold text-txt mb-4 text-sm">Online vs Offline</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie data={[{ name: 'Online', value: 186 }, { name: 'Offline', value: 42 }, { name: 'Pending', value: 20 }]} dataKey="value" nameKey="name" outerRadius={80} label>
+                <Cell fill="#22C55E" /><Cell fill="#EF4444" /><Cell fill="#F59E0B" />
+              </Pie>
+              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card className="p-5">
+          <h3 className="font-semibold text-txt mb-4 text-sm">Registration Trends</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={registrationData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} />
+              <YAxis stroke="#94A3B8" fontSize={11} />
+              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }} />
+              <Bar dataKey="devices" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card className="p-5">
+          <h3 className="font-semibold text-txt mb-4 text-sm">Android Version Distribution</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={androidDist} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis type="number" stroke="#94A3B8" fontSize={11} />
+              <YAxis type="category" dataKey="name" stroke="#94A3B8" fontSize={10} width={90} />
+              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }} />
+              <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                {androidDist.map((e, i) => <Cell key={i} fill={e.color} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card className="p-5 lg:col-span-2">
+          <h3 className="font-semibold text-txt mb-4 text-sm">System Performance Overview (24h)</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={perfData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="hour" stroke="#94A3B8" fontSize={10} />
+              <YAxis stroke="#94A3B8" fontSize={11} />
+              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Line type="monotone" dataKey="cpu" name="CPU %" stroke="#22C55E" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="memory" name="Memory %" stroke="#F59E0B" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="network" name="Network %" stroke="#6366F1" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function Inventory() {
+  const [tab, setTab] = useState('apps');
+  return (
+    <div className="space-y-4 fade-in">
+      <div>
+        <h1 className="text-xl md:text-2xl font-bold text-txt">Inventory</h1>
+        <p className="text-sm text-muted mt-1">Simulated app and file inventories (demo data)</p>
+      </div>
+      <div className="flex gap-1 border-b border-white/5">
+        <button onClick={() => setTab('apps')} className={`px-4 py-2 text-sm rounded-t-lg ${tab === 'apps' ? 'text-primary border-b-2 border-primary' : 'text-muted hover:text-txt'}`}>Applications</button>
+        <button onClick={() => setTab('files')} className={`px-4 py-2 text-sm rounded-t-lg ${tab === 'files' ? 'text-primary border-b-2 border-primary' : 'text-muted hover:text-txt'}`}>Files</button>
+      </div>
+      {tab === 'apps' ? <AppInventory /> : <FileInventory />}
+    </div>
+  );
+}
+
+function AppInventory() {
+  const { push } = useApp();
+  const [apps] = useState(() => genApps());
+  const [search, setSearch] = useState('');
+  const [cat, setCat] = useState('all');
+  const cats = [...new Set(apps.map(a => a.category))];
+  const filtered = apps.filter(a => (!search || a.name.toLowerCase().includes(search.toLowerCase()) || a.packageName.toLowerCase().includes(search.toLowerCase())) && (cat === 'all' || a.category === cat));
+
+  return (
+    <div className="space-y-3">
+      <Card className="p-3">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search apps..." className="pl-9" />
+          </div>
+          <Select value={cat} onChange={e => setCat(e.target.value)} className="w-44">
+            <option value="all">All Categories</option>
+            {cats.map(c => <option key={c} value={c}>{c}</option>)}
+          </Select>
+          <Button variant="secondary" size="sm" onClick={() => push('Apps exported (demo)')} icon={Download}>Export</Button>
+        </div>
+      </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {filtered.map(a => (
+          <Card key={a.id} className="p-4 hover:border-primary/30 transition-colors">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold" style={{ background: a.color }}>{a.name[0]}</div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-txt text-sm truncate">{a.name}</div>
+                <div className="text-xs text-muted font-mono truncate">{a.packageName}</div>
+              </div>
+            </div>
+            <div className="text-xs space-y-1 mt-2">
+              <div className="flex justify-between"><span className="text-muted">Version</span><span className="text-txt">v{a.version}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Category</span><span className="text-txt">{a.category}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Installed</span><span className="text-txt">{a.installDate}</span></div>
+            </div>
+            <div className="mt-3"><Badge type={a.status === 'Up to date' ? 'success' : 'warning'}>{a.status}</Badge></div>
+          </Card>
+        ))}
+      </div>
+      {!filtered.length && <EmptyState title="No apps found" desc="Try a different search" icon={Package} />}
+    </div>
+  );
+}
+
+function FileInventory() {
+  const { push } = useApp();
+  const [files] = useState(() => genFiles());
+  const [search, setSearch] = useState('');
+  const [modal, setModal] = useState(null);
+  const filtered = files.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()));
+
+  const icons = { PDF: FileText, PNG: Image, JPG: Image, MP4: Video, MP3: Music, APK: Package, JSON: Code2, TXT: File, CSV: File, LOG: Terminal, PPTX: File, SQL: Database };
+
+  return (
+    <div className="space-y-3">
+      <Card className="p-3">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search files..." className="pl-9" />
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => push('Files exported (demo)')} icon={Download}>Export</Button>
+        </div>
+      </Card>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-white/5"><tr>
+              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted uppercase">File</th>
+              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted uppercase">Type</th>
+              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted uppercase">Category</th>
+              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted uppercase">Size</th>
+              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted uppercase">Modified</th>
+              <th className="px-3 py-2.5"></th>
+            </tr></thead>
+            <tbody className="divide-y divide-white/5">
+              {filtered.map(f => {
+                const Icon = icons[f.type] || File;
+                return (
+                  <tr key={f.id} className="hover:bg-white/5">
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2"><Icon size={16} className="text-primary" /><span className="text-txt">{f.name}</span></div>
+                    </td>
+                    <td className="px-3 py-2.5 text-muted">{f.type}</td>
+                    <td className="px-3 py-2.5 text-muted">{f.category}</td>
+                    <td className="px-3 py-2.5 text-muted">{f.size}</td>
+                    <td className="px-3 py-2.5 text-muted text-xs">{fmtDate(f.modified)}</td>
+                    <td className="px-3 py-2.5"><button onClick={() => setModal(f)} className="text-xs text-primary hover:underline">Preview</button></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {!filtered.length && <EmptyState title="No files found" desc="Try a different search" icon={File} />}
+      </Card>
+      <Modal open={!!modal} onClose={() => setModal(null)} title="File Preview">
+        {modal && (
+          <div>
+            <div className="text-center py-6">
+              <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-primary/15 text-primary flex items-center justify-center"><File size={28} /></div>
+              <div className="font-semibold text-txt">{modal.name}</div>
+              <div className="text-sm text-muted">{modal.type} · {modal.size}</div>
+            </div>
+            <div className="space-y-1.5 text-sm">
+              {[['Category', modal.category], ['Size', modal.size], ['Modified', fmtDate(modal.modified)], ['File ID', modal.id]].map(([k, v]) => (
+                <div key={k} className="flex justify-between py-2 border-b border-white/5"><span className="text-muted">{k}</span><span className="text-txt">{v}</span></div>
+              ))}
+            </div>
+            <p className="text-xs text-muted mt-4">This is a simulated file record. No actual file access is performed.</p>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+}
+
+function ActivityLogs() {
+  const { push } = useApp();
+  const [logs] = useState(() => genLogs(40));
+  const [search, setSearch] = useState('');
+  const [cat, setCat] = useState('all');
+  const [result, setResult] = useState('all');
+  const [page, setPage] = useState(1);
+  const [modal, setModal] = useState(null);
+  const cats = [...new Set(logs.map(l => l.category))];
+
+  const filtered = logs.filter(l => {
+    const s = search.toLowerCase();
+    return (!s || l.user.toLowerCase().includes(s) || l.action.toLowerCase().includes(s) || l.deviceId.toLowerCase().includes(s))
+      && (cat === 'all' || l.category === cat) && (result === 'all' || l.result === result);
+  });
+  const pageData = filtered.slice((page - 1) * 10, page * 10);
+
+  const exportCSV = () => {
+    const csv = 'Timestamp,User,Action,Category,Device,Result,IP\n' + filtered.map(l => `${l.timestamp},${l.user},${l.action},${l.category},${l.deviceId},${l.result},${l.ip}`).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'logs.csv'; a.click();
+    push('Logs exported');
+  };
+
+  return (
+    <div className="space-y-4 fade-in">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div><h1 className="text-xl md:text-2xl font-bold">Activity Logs</h1><p className="text-sm text-muted mt-1">{filtered.length} simulated audit records</p></div>
+        <Button variant="secondary" size="sm" onClick={exportCSV} icon={Download}>Export CSV</Button>
+      </div>
+      <Card className="p-3">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <Input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search logs..." className="pl-9" />
+          </div>
+          <Select value={cat} onChange={e => { setCat(e.target.value); setPage(1); }} className="w-40">
+            <option value="all">All Categories</option>
+            {cats.map(c => <option key={c} value={c}>{c}</option>)}
+          </Select>
+          <Select value={result} onChange={e => { setResult(e.target.value); setPage(1); }} className="w-36">
+            <option value="all">All Results</option>
+            <option value="success">Success</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+          </Select>
+        </div>
+      </Card>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-white/5"><tr>
+              {['Timestamp', 'User', 'Action', 'Category', 'Device', 'Result', 'IP'].map(h => (
+                <th key={h} className="text-left px-3 py-2.5 text-xs font-semibold text-muted uppercase whitespace-nowrap">{h}</th>
+              ))}
+              <th></th>
+            </tr></thead>
+            <tbody className="divide-y divide-white/5">
+              {pageData.map(l => (
+                <tr key={l.id} className="hover:bg-white/5 cursor-pointer" onClick={() => setModal(l)}>
+                  <td className="px-3 py-2.5 text-muted text-xs whitespace-nowrap">{fmtDateTime(l.timestamp)}</td>
+                  <td className="px-3 py-2.5 text-txt whitespace-nowrap">{l.user}</td>
+                  <td className="px-3 py-2.5 text-txt">{l.action}</td>
+                  <td className="px-3 py-2.5 text-muted">{l.category}</td>
+                  <td className="px-3 py-2.5 text-muted text-xs font-mono">{l.deviceId}</td>
+                  <td className="px-3 py-2.5"><Badge type={l.result === 'success' ? 'success' : l.result === 'warning' ? 'warning' : 'danger'}>{l.result}</Badge></td>
+                  <td className="px-3 py-2.5 text-muted text-xs font-mono">{l.ip}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!pageData.length && <EmptyState title="No logs found" desc="Try adjusting filters" icon={FileText} />}
+        <div className="px-4 py-3 border-t border-white/5"><Pagination page={page} total={filtered.length} onChange={setPage} /></div>
+      </Card>
+      <Modal open={!!modal} onClose={() => setModal(null)} title="Log Details">
+        {modal && <div className="space-y-1.5 text-sm">
+          {[['Log ID', modal.id], ['Timestamp', fmtDateTime(modal.timestamp)], ['User', modal.user], ['Action', modal.action], ['Category', modal.category], ['Device ID', modal.deviceId], ['Result', modal.result], ['IP Address', modal.ip]].map(([k, v]) => (
+            <div key={k} className="flex justify-between py-2 border-b border-white/5"><span className="text-muted">{k}</span><span className="text-txt">{v}</span></div>
+          ))}
+        </div>}
+      </Modal>
+    </div>
+  );
+}
+
+function Notifications({ notifications, setNotifications }) {
+  const { push } = useApp();
+  const [cat, setCat] = useState('all');
+  const [modal, setModal] = useState(null);
+  const cats = ['all', 'system', 'devices', 'security', 'updates'];
+  const filtered = notifications.filter(n => cat === 'all' || n.category === cat);
+
+  const markAllRead = () => { setNotifications(ns => ns.map(n => ({ ...n, read: true }))); push('All notifications marked as read'); };
+  const toggleRead = (id) => setNotifications(ns => ns.map(n => n.id === id ? { ...n, read: !n.read } : n));
+  const del = (id) => { setNotifications(ns => ns.filter(n => n.id !== id)); push('Notification deleted'); };
+
+  const catColor = { system: 'primary', devices: 'success', security: 'danger', updates: 'warning' };
+  const catIcon = { system: SettingsIcon, devices: Smartphone, security: Shield, updates: Download };
+
+  return (
+    <div className="space-y-4 fade-in">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div><h1 className="text-xl md:text-2xl font-bold">Notifications</h1><p className="text-sm text-muted mt-1">{notifications.filter(n => !n.read).length} unread · {notifications.length} total</p></div>
+        <Button variant="secondary" size="sm" onClick={markAllRead} icon={Check}>Mark all as read</Button>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {cats.map(c => (
+          <button key={c} onClick={() => setCat(c)} className={`px-3 py-1.5 text-sm rounded-lg capitalize ${cat === c ? 'bg-primary text-white' : 'bg-white/5 text-muted hover:bg-white/10'}`}>{c}</button>
+        ))}
+      </div>
+      <div className="space-y-2">
+        {filtered.map(n => {
+          const Icon = catIcon[n.category] || Bell;
+          return (
+            <Card key={n.id} className={`p-4 ${!n.read ? 'border-primary/20' : ''}`}>
+              <div className="flex items-start gap-3">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-${catColor[n.category]}/15 text-${catColor[n.category]}`}>
+                  <Icon size={16} />
+                </div>
+                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { setModal(n); if (!n.read) toggleRead(n.id); }}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-txt text-sm">{n.title}</span>
+                    {!n.read && <span className="w-2 h-2 rounded-full bg-primary" />}
+                  </div>
+                  <div className="text-sm text-muted mt-0.5">{n.message}</div>
+                  <div className="text-xs text-muted/70 mt-1.5">{fmtDateTime(n.timestamp)} · <span className="capitalize">{n.category}</span></div>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => toggleRead(n.id)} className="p-1.5 text-muted hover:text-primary rounded hover:bg-white/5" title="Toggle read"><CheckCircle size={14} /></button>
+                  <button onClick={() => del(n.id)} className="p-1.5 text-muted hover:text-danger rounded hover:bg-white/5" title="Delete"><Trash2 size={14} /></button>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+      {!filtered.length && <EmptyState title="No notifications" desc="You're all caught up" icon={Bell} />}
+      <Modal open={!!modal} onClose={() => setModal(null)} title="Notification">
+        {modal && <div>
+          <div className="flex items-center gap-2 mb-2"><Badge type={catColor[modal.category]}>{modal.category}</Badge>{modal.read ? <Badge type="muted">Read</Badge> : <Badge type="primary">Unread</Badge>}</div>
+          <h4 className="font-semibold text-txt text-lg">{modal.title}</h4>
+          <p className="text-sm text-muted mt-2">{modal.message}</p>
+          <p className="text-xs text-muted/60 mt-3">{fmtDateTime(modal.timestamp)}</p>
+        </div>}
+      </Modal>
+    </div>
+  );
+}
+
+function UsersPage() {
+  const { push } = useApp();
+  const [users, setUsers] = useState(genUsers);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({ name: '', email: '', role: 'Viewer' });
+
+  const filtered = users.filter(u => {
+    const s = search.toLowerCase();
+    return (!s || u.name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s)) && (roleFilter === 'all' || u.role === roleFilter);
+  });
+
+  const save = () => {
+    if (!form.name || !form.email) { push('Please fill all fields', 'error'); return; }
+    if (editing) {
+      setUsers(us => us.map(u => u.id === editing.id ? { ...u, ...form } : u));
+      push('User updated');
+    } else {
+      setUsers(us => [...us, { id: `USR-${uid()}`, ...form, status: 'active', lastLogin: new Date().toISOString(), avatar: form.name.split(' ').map(n => n[0]).join('').slice(0, 2) }]);
+      push('User created');
+    }
+    setModalOpen(false); setEditing(null); setForm({ name: '', email: '', role: 'Viewer' });
+  };
+
+  const del = (u) => {
+    if (!confirm(`Delete ${u.name}? (demo)`)) return;
+    setUsers(us => us.filter(x => x.id !== u.id)); push('User deleted');
+  };
+
+  const roleColor = { 'Super Admin': 'danger', 'Administrator': 'primary', 'Manager': 'warning', 'Viewer': 'muted' };
+
+  return (
+    <div className="space-y-4 fade-in">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div><h1 className="text-xl md:text-2xl font-bold">Users & Roles</h1><p className="text-sm text-muted mt-1">{users.length} users (demo)</p></div>
+        <Button size="sm" onClick={() => { setEditing(null); setForm({ name: '', email: '', role: 'Viewer' }); setModalOpen(true); }} icon={Plus}>Create User</Button>
+      </div>
+      <Card className="p-3">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search users..." className="pl-9" />
+          </div>
+          <Select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="w-40">
+            <option value="all">All Roles</option>
+            {['Super Admin', 'Administrator', 'Manager', 'Viewer'].map(r => <option key={r} value={r}>{r}</option>)}
+          </Select>
+        </div>
+      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {filtered.map(u => (
+          <Card key={u.id} className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-sm font-bold shrink-0">{u.avatar}</div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-txt truncate">{u.name}</div>
+                <div className="text-xs text-muted truncate">{u.email}</div>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  <Badge type={roleColor[u.role]}>{u.role}</Badge>
+                  <Badge type={u.status === 'active' ? 'success' : 'muted'}>{u.status}</Badge>
+                </div>
+                <div className="text-xs text-muted mt-2">Last login: {fmtDateTime(u.lastLogin)}</div>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <Button variant="secondary" size="sm" icon={Edit} onClick={() => { setEditing(u); setForm({ name: u.name, email: u.email, role: u.role }); setModalOpen(true); }} className="flex-1">Edit</Button>
+              <Button variant="danger" size="sm" icon={Trash2} onClick={() => del(u)}>Delete</Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+      {!filtered.length && <EmptyState title="No users found" desc="Try a different search" icon={Users} />}
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit User' : 'Create User'}>
+        <Field label="Full Name"><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="John Doe" /></Field>
+        <Field label="Email"><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="john@vit.io" /></Field>
+        <Field label="Role"><Select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+          {['Super Admin', 'Administrator', 'Manager', 'Viewer'].map(r => <option key={r} value={r}>{r}</option>)}
+        </Select></Field>
+        <div className="flex justify-end gap-2 mt-2">
+          <Button variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
+          <Button onClick={save}>{editing ? 'Save Changes' : 'Create User'}</Button>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+function Reports() {
+  const { push } = useApp();
+  const reports = [
+    { id: 'RPT-1', name: 'Device Summary Report', desc: 'Complete device inventory and status', icon: Smartphone, color: 'primary' },
+    { id: 'RPT-2', name: 'Activity Report', desc: 'User actions and audit trail', icon: Activity, color: 'success' },
+    { id: 'RPT-3', name: 'System Health Report', desc: 'Server performance and uptime', icon: Server, color: 'warning' },
+    { id: 'RPT-4', name: 'User Activity Report', desc: 'Per-user engagement metrics', icon: Users, color: 'danger' },
+  ];
+  return (
+    <div className="space-y-4 fade-in">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div><h1 className="text-xl md:text-2xl font-bold">Reports</h1><p className="text-sm text-muted mt-1">Generate and export reports (demo)</p></div>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={() => push('Report printed (demo)')} icon={Printer}>Print</Button>
+          <Button variant="secondary" size="sm" onClick={() => push('PDF preview ready (demo)')} icon={FileDown}>PDF Preview</Button>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {reports.map(r => (
+          <Card key={r.id} className="p-5 hover:border-primary/30 transition-colors">
+            <div className="flex items-start gap-3">
+              <div className={`w-11 h-11 rounded-xl bg-${r.color}/15 text-${r.color} flex items-center justify-center`}><r.icon size={20} /></div>
+              <div className="flex-1">
+                <div className="font-semibold text-txt">{r.name}</div>
+                <div className="text-sm text-muted mt-0.5">{r.desc}</div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <Input type="date" className="flex-1 min-w-[120px]" defaultValue={new Date().toISOString().split('T')[0]} />
+              <Button size="sm" onClick={() => push(`${r.name} generated (demo)`)} icon={Download}>Generate</Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <Card className="p-5">
+        <h3 className="font-semibold text-txt mb-4">Device Summary Chart</h3>
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart data={registrationData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+            <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} />
+            <YAxis stroke="#94A3B8" fontSize={11} />
+            <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }} />
+            <Bar dataKey="devices" fill="#6366F1" radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+  );
+}
+
+function ServerStatus() {
+  const services = [
+    { name: 'API Server', status: 'operational', uptime: '99.98%', rt: '42ms' },
+    { name: 'Database', status: 'operational', uptime: '99.95%', rt: '8ms' },
+    { name: 'Frontend', status: 'operational', uptime: '100%', rt: '18ms' },
+    { name: 'Storage', status: 'operational', uptime: '99.99%', rt: '12ms' },
+  ];
+  const logs = [
+    { t: '12:00:00', m: 'Health check passed' },
+    { t: '11:45:00', m: 'Database query optimized' },
+    { t: '11:30:00', m: 'Cache warmed up' },
+    { t: '11:15:00', m: 'Scheduled backup completed' },
+    { t: '11:00:00', m: 'API rate limit check passed' },
+  ];
+  return (
+    <div className="space-y-4 fade-in">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-xl md:text-2xl font-bold">Server Status</h1><p className="text-sm text-muted mt-1">All metrics are simulated for demonstration</p></div>
+        <Badge type="success"><span className="w-1.5 h-1.5 rounded-full bg-success pulse-dot" /> All Operational</Badge>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {services.map(s => (
+          <Card key={s.name} className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-muted">{s.name}</span>
+              <span className="w-2 h-2 rounded-full bg-success pulse-dot" />
+            </div>
+            <div className="text-lg font-bold text-success">{s.status}</div>
+            <div className="text-xs text-muted mt-1">Uptime {s.uptime}</div>
+            <div className="text-xs text-muted">Response {s.rt}</div>
+          </Card>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-5">
+          <h3 className="font-semibold text-txt mb-4">Simulated CPU & Memory</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={perfData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="hour" stroke="#94A3B8" fontSize={10} />
+              <YAxis stroke="#94A3B8" fontSize={11} />
+              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8 }} />
+              <Line type="monotone" dataKey="cpu" name="CPU" stroke="#22C55E" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="memory" name="Memory" stroke="#F59E0B" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card className="p-5">
+          <h3 className="font-semibold text-txt mb-4">Mock Server Logs</h3>
+          <div className="space-y-1.5 font-mono text-xs">
+            {logs.map((l, i) => (
+              <div key={i} className="flex gap-2 py-1.5 border-b border-white/5">
+                <span className="text-muted">{l.t}</span>
+                <span className="text-success">[OK]</span>
+                <span className="text-txt">{l.m}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function ApiDocs() {
+  const { push } = useApp();
+  const endpoints = [
+    { method: 'GET', path: '/api/devices', desc: 'List all demo devices' },
+    { method: 'GET', path: '/api/devices/:id', desc: 'Get device by ID' },
+    { method: 'POST', path: '/api/devices', desc: 'Register a demo device' },
+    { method: 'GET', path: '/api/logs', desc: 'Fetch activity logs' },
+    { method: 'GET', path: '/api/users', desc: 'List demo users' },
+  ];
+  const example = `{
+  "id": "DV-0001",
+  "name": "Alpha-421",
+  "model": "Galaxy S23",
+  "status": "online",
+  "battery": 87
+}`;
+  return (
+    <div className="space-y-4 fade-in max-w-4xl">
+      <div><h1 className="text-xl md:text-2xl font-bold">API Documentation</h1><p className="text-sm text-muted mt-1">Mock endpoints — no real device control</p></div>
+      <Card className="p-5">
+        <h3 className="font-semibold text-txt mb-2">Overview</h3>
+        <p className="text-sm text-muted">VIT REMOTE provides a fictional REST API for demonstration. All endpoints return demo data only.</p>
+        <div className="mt-3 p-3 bg-warning/10 border border-warning/30 rounded-lg text-sm text-warning flex items-center gap-2"><AlertTriangle size={16} /> This API is not real. All responses are illustrative.</div>
+      </Card>
+      <Card className="p-5">
+        <h3 className="font-semibold text-txt mb-3">Authentication</h3>
+        <p className="text-sm text-muted mb-2">Include a Bearer token in the Authorization header.</p>
+        <pre className="bg-black/50 p-3 rounded-lg text-xs text-success font-mono overflow-x-auto">Authorization: Bearer &lt;demo_token&gt;</pre>
+      </Card>
+      <Card className="p-5">
+        <h3 className="font-semibold text-txt mb-3">Endpoints</h3>
+        <div className="space-y-2">
+          {endpoints.map(e => (
+            <div key={e.path} className="flex flex-wrap items-center gap-2 py-2 border-b border-white/5">
+              <Badge type={e.method === 'GET' ? 'success' : 'primary'}>{e.method}</Badge>
+              <code className="text-xs font-mono text-txt">{e.path}</code>
+              <span className="text-xs text-muted ml-auto">{e.desc}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-txt">Example Response</h3>
+          <Button size="sm" variant="secondary" icon={Copy} onClick={() => { navigator.clipboard?.writeText(example); push('Copied to clipboard'); }}>Copy</Button>
+        </div>
+        <pre className="bg-black/50 p-3 rounded-lg text-xs text-success font-mono overflow-x-auto">{example}</pre>
+      </Card>
+    </div>
+  );
+}
+
+function SettingsPage({ onResetData }) {
+  const { push } = useApp();
+  const [compact, setCompact] = useState(false);
+  const [notifPref, setNotifPref] = useState(true);
+  const [timeFmt, setTimeFmt] = useState('12h');
+  const [lang, setLang] = useState('en');
+  const [profile, setProfile] = useState({ name: 'Admin User', email: 'admin@vit.io' });
+
+  const clearStorage = () => {
+    if (!confirm('Clear all local storage? (demo)')) return;
+    localStorage.clear();
+    push('Local storage cleared');
+  };
+
+  return (
+    <div className="space-y-4 fade-in max-w-3xl">
+      <h1 className="text-xl md:text-2xl font-bold">Settings</h1>
+      <Card className="p-5">
+        <h3 className="font-semibold text-txt mb-4 flex items-center gap-2"><Sun size={16} /> Appearance</h3>
+        <div className="space-y-3 text-sm">
+          <label className="flex items-center justify-between"><span className="text-muted">Compact Sidebar</span>
+            <input type="checkbox" checked={compact} onChange={e => setCompact(e.target.checked)} className="w-4 h-4 accent-primary" /></label>
+          <div className="flex items-center justify-between"><span className="text-muted">Accent Color</span>
+            <div className="flex gap-2">{[['#6366F1', 'primary'], ['#8B5CF6', 'secondary'], ['#22C55E', 'success'], ['#F59E0B', 'warning']].map(([c, n]) => (
+              <button key={n} onClick={() => push(`Accent set to ${n}`)} className="w-6 h-6 rounded-full border-2 border-white/20" style={{ background: c }} />
+            ))}</div>
+          </div>
+        </div>
+      </Card>
+      <Card className="p-5">
+        <h3 className="font-semibold text-txt mb-4 flex items-center gap-2"><SettingsIcon size={16} /> Preferences</h3>
+        <div className="space-y-3">
+          <Field label="Language"><Select value={lang} onChange={e => setLang(e.target.value)}>
+            <option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option>
+          </Select></Field>
+          <Field label="Time Format"><Select value={timeFmt} onChange={e => setTimeFmt(e.target.value)}>
+            <option value="12h">12-hour</option><option value="24h">24-hour</option>
+          </Select></Field>
+          <label className="flex items-center justify-between text-sm"><span className="text-muted">Email Notifications</span>
+            <input type="checkbox" checked={notifPref} onChange={e => setNotifPref(e.target.checked)} className="w-4 h-4 accent-primary" /></label>
+        </div>
+      </Card>
+      <Card className="p-5">
+        <h3 className="font-semibold text-txt mb-4 flex items-center gap-2"><UserIcon size={16} /> Profile</h3>
+        <Field label="Name"><Input value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} /></Field>
+        <Field label="Email"><Input value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} /></Field>
+        <Button size="sm" onClick={() => push('Profile saved')} icon={Check}>Save Profile</Button>
+      </Card>
+      <Card className="p-5">
+        <h3 className="font-semibold text-txt mb-4 flex items-center gap-2"><Database size={16} /> System</h3>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" onClick={onResetData} icon={RefreshCw}>Reset Demo Data</Button>
+          <Button variant="danger" size="sm" onClick={clearStorage} icon={Trash2}>Clear Local Storage</Button>
+        </div>
+        <p className="text-xs text-muted mt-3">VIT REMOTE v2.4.1 · Frontend demo · All data is simulated.</p>
+      </Card>
+    </div>
+  );
+}
+
+function HelpSupport() {
+  const { push } = useApp();
+  const [open, setOpen] = useState(null);
+  const faqs = [
+    { q: 'Is VIT REMOTE a real device management tool?', a: 'No. This is a frontend demonstration only. All data, devices, and users are simulated.' },
+    { q: 'How do I reset demo data?', a: 'Go to Settings → System → Reset Demo Data, or refresh the page.' },
+    { q: 'Can I connect a real device?', a: 'No. This demo does not connect to any real hardware.' },
+    { q: 'How do I export data?', a: 'Use the Export CSV button on Devices or Activity Logs pages.' },
+  ];
+  return (
+    <div className="space-y-4 fade-in max-w-3xl">
+      <h1 className="text-xl md:text-2xl font-bold">Help & Support</h1>
+      <Card className="p-5">
+        <h3 className="font-semibold text-txt mb-3">Frequently Asked Questions</h3>
+        <div className="space-y-2">
+          {faqs.map((f, i) => (
+            <div key={i} className="border border-white/5 rounded-lg overflow-hidden">
+              <button onClick={() => setOpen(open === i ? null : i)} className="w-full flex items-center justify-between p-3 text-left text-sm text-txt hover:bg-white/5">
+                {f.q}<ChevronDown size={16} className={`text-muted transition-transform ${open === i ? 'rotate-180' : ''}`} />
+              </button>
+              {open === i && <div className="px-3 pb-3 text-sm text-muted">{f.a}</div>}
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card className="p-5">
+        <h3 className="font-semibold text-txt mb-3">Contact Support</h3>
+        <Field label="Subject"><Input placeholder="How can we help?" /></Field>
+        <Field label="Message"><textarea className="w-full h-28 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-txt placeholder-muted focus:outline-none focus:border-primary/50" placeholder="Describe your issue..." /></Field>
+        <Button size="sm" onClick={() => push('Support ticket submitted (demo)')} icon={Mail}>Submit Ticket</Button>
+      </Card>
+      <Card className="p-5">
+        <h3 className="font-semibold text-txt mb-2">About VIT REMOTE</h3>
+        <p className="text-sm text-muted">VIT REMOTE is a premium, frontend-only Android Device Management dashboard demo. It showcases modern UI/UX, data visualization, and interactions — without any real device access.</p>
+        <div className="mt-3 flex gap-2"><Badge type="primary">v2.4.1</Badge><Badge type="success">Frontend Only</Badge><Badge type="warning">Demo Data</Badge></div>
+      </Card>
+    </div>
+  );
+}
+
+/* ============ ROUTER ============ */
+function PageRouter({ page, setPage, notifications, setNotifications }) {
+  const [devices, setDevices] = useState(() => {
+    const saved = localStorage.getItem('vit_devices');
+    return saved ? JSON.parse(saved) : genDevices(28);
+  });
+  const [selectedDevice, setSelectedDevice] = useState(null);
+
+  useEffect(() => { localStorage.setItem('vit_devices', JSON.stringify(devices)); }, [devices]);
+
+  const resetData = () => {
+    setDevices(genDevices(28));
+    localStorage.removeItem('vit_devices');
+    alert('Demo data reset (demo)');
+  };
+
+  switch (page) {
+    case 'overview': return <Overview setPage={setPage} />;
+    case 'devices': return <Devices setPage={setPage} devices={devices} setDevices={setDevices} setSelectedDevice={setSelectedDevice} />;
+    case 'device-detail': return <DeviceDetail device={selectedDevice} setPage={setPage} />;
+    case 'analytics': return <Analytics />;
+    case 'inventory': return <Inventory />;
+    case 'logs': return <ActivityLogs />;
+    case 'notifications': return <Notifications notifications={notifications} setNotifications={setNotifications} />;
+    case 'reports': return <Reports />;
+    case 'users': return <UsersPage />;
+    case 'server': return <ServerStatus />;
+    case 'api': return <ApiDocs />;
+    case 'settings': return <SettingsPage onResetData={resetData} />;
+    case 'help': return <HelpSupport />;
+    default: return <Overview setPage={setPage} />;
+  }
+}
+
+/* ============ APP ROOT ============ */
+function App() {
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('vit_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [page, setPage] = useState('overview');
+  const [notifications, setNotifications] = useState(genNotifications);
+
+  const login = (u) => {
+    setUser(u);
+    if (u.remember) localStorage.setItem('vit_user', JSON.stringify(u));
+  };
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('vit_user');
+    setPage('overview');
+  };
+
+  return (
+    <ToastProvider>
+      {!user ? (
+        <Login onLogin={login} />
+      ) : (
+        <Layout user={user} page={page} setPage={setPage} onLogout={logout} notifications={notifications} setNotifications={setNotifications} />
+      )}
+    </ToastProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
